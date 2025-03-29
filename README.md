@@ -696,3 +696,5 @@ pip install psycopg2
 \i /path/to/python/read_xml.py
 ```
 **Заменить /path/to на фактический путь к каталогу python/read_xml.py** на Вашем локальном устройстве
+\
+## **Часть вторая. SQL-запросы**
