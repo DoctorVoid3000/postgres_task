@@ -869,7 +869,6 @@ LIMIT 5;
 ```
 \
 **Фактическое время**
-\
 ```
  Limit  (cost=33351.80..33415.49 rows=5 width=14) (actual time=533.372..561.236 rows=5.00 loops=1)
    Buffers: shared hit=50268 read=44520
