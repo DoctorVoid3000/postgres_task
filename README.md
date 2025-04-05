@@ -722,7 +722,7 @@ LIMIT 5;
 ```
 \
 **План запроса Q1**\
-**Оценка планировщика:**\
+**Оценка планировщика:**
 
 ```
  Limit  (cost=529.15..529.16 rows=1 width=59)
@@ -741,7 +741,7 @@ LIMIT 5;
                                  ->  Seq Scan on comments c  (cost=0.00..24.42 rows=542 width=12)
 ```
 
-**Фактическое время**\
+**Фактическое время**
 
 ```
  Limit  (cost=529.15..529.16 rows=1 width=59) (actual time=5.425..5.447 rows=1.00 loops=1)
@@ -777,11 +777,10 @@ LIMIT 5;
 ```
 
 **Оптимизация запроса Q1**
-Добавление индекса на поле tags:\
+Добавление индекса на поле tags:
 ```sql
 CREATE INDEX index_tags ON posts.posts(tags);
 ```
-\
 не меняет оценочной стоимости и плана выполнения запроса. Но время фактического выполнения уменьшается
 (при данном запуске, например, уменьшилось на 1.4 мс):
 ```
@@ -818,7 +817,7 @@ CREATE INDEX index_tags ON posts.posts(tags);
 ```
 \
 **Q2**\
-\
+
 ```sql
 EXPLAIN --аналогично для плана
     ANALYZE
@@ -845,7 +844,6 @@ LIMIT 5;
 \
 **План запроса Q2**\
 **Оценка планировщика**\
-\
 ```
  Limit  (cost=33351.80..33415.49 rows=5 width=14)
    ->  Nested Loop  (cost=33351.80..77324.91 rows=3452 width=14)
@@ -922,12 +920,12 @@ LIMIT 5;
 ```
 \
 **Оптимизация запроса Q2:**
-Условие WHERE на поле Score включает подзапрос, поэтому было решено создать индекс:\ 
+Условие WHERE на поле Score включает подзапрос, поэтому было решено создать индекс:
 ```sql
 CREATE INDEX index_tags ON posts.posts(tags);
 ```
 \
-в результате чего цена оценочного плана уменьшилась практически в 2 раза:\
+в результате чего цена оценочного плана уменьшилась практически в 2 раза:
 ```
  Limit  (cost=17344.37..17536.97 rows=5 width=14)
    ->  Nested Loop  (cost=17344.37..150311.63 rows=3452 width=14)
@@ -950,7 +948,7 @@ CREATE INDEX index_tags ON posts.posts(tags);
                Index Cond: (id = p.owneruserid)
 ```
 \
-а время выполнения более чем в 10 раз:\
+а время выполнения более чем в 10 раз:
 ```
  Limit  (cost=17344.37..17536.97 rows=5 width=14) (actual time=28.212..29.034 rows=5.00 loops=1)
    Buffers: shared hit=7059 read=9
@@ -990,7 +988,7 @@ CREATE INDEX index_tags ON posts.posts(tags);
    Buffers: shared hit=9
  Planning Time: 0.884 ms
  Execution Time: 29.157 ms
-```\
+```
 ### **Инструкция по запуску**
 
 **1.** Подключиться к СУБД PostgreSQL\
