@@ -310,7 +310,8 @@ if __name__ == '__main__':
     )
 
     if conn is not None:
-        ###ВНИМАНИЕ! Пути к xml-файлам необходимо поменять!###
+        ###ВНИМАНИЕ! Пути к xml-файлам необходимо поменять на path/to/postgres_task/python/read_xml.py!###
+        ##где path/to/ - фактический путь к каталогу postgres_task на Вашем локальном устройстве
         users_path = '/home/mephist/postgresql/scripts/xml/dba.stackexchange.com/Users.xml'
         posts_path = '/home/mephist/postgresql/scripts/xml/dba.stackexchange.com/Posts.xml'
         badges_path = '/home/mephist/postgresql/scripts/xml/Badges.xml'
@@ -687,14 +688,321 @@ pip install psycopg2
 \
 **3.** Запустить SQL-скрипт, создать базу данных, схемы и таблицы:
 ```psql
-\i /path/to/sql/create_db.sql
+\i /path/to/postgres_task/sql/create_db.sql
 ```
-**Заменить /path/to на фактический путь к каталогу sql/create_db.sql** на Вашем локальном устройстве \
+**Заменить /path/to на фактический путь к каталогу postgres_task/sql/create_db.sql** на Вашем локальном устройстве \
 \
-**4.** запустить python-скрипт, заполнить таблицы данными. **НЕ ЗАБУДЬТЕ ПОМЕНЯТЬ ПУТИ К XML-ФАЙЛАМ НА ФАКТИЧЕСКИЕ НА ВАШЕМ ЛОКАЛЬНОМ УСТРОЙСТВЕ!!!**
+**4.** запустить python-скрипт read_xml.py, заполнить таблицы данными. **НЕ ЗАБУДЬТЕ ПОМЕНЯТЬ ПУТИ В СКРИПТЕ К XML-ФАЙЛАМ НА ФАКТИЧЕСКИЕ НА ВАШЕМ ЛОКАЛЬНОМ УСТРОЙСТВЕ!!!**
 ```psql
-\i /path/to/python/read_xml.py
+\i /path/to/postgres_task/python/read_xml.py
 ```
-**Заменить /path/to на фактический путь к каталогу python/read_xml.py** на Вашем локальном устройстве
+**Заменить /path/to на фактический путь к каталогу postgres_task/python/read_xml.py** на Вашем локальном устройстве
 \
 ## **Часть вторая. SQL-запросы**
+
+**#Q1** \
+\
+```sql
+EXPLAIN --оценка планировщика
+    ANALYZE --фактическое время выполнения
+SELECT 
+    COUNT(P.tags) AS CountTags
+    , P.tags
+    , AVG(C.CreationDate - P.CreationDate) AS AvgAnswerTime
+    , AVG(P.Score)::INTEGER AvgScore
+FROM posts.posts P JOIN posts.Comments C
+     ON P.Id = C.PostId
+WHERE 
+    tags LIKE '%|postgresql|%'
+    AND 
+    LENGTH(tags) - LENGTH(REPLACE(tags, '|', '')) = 3 
+GROUP BY tags
+ORDER BY CountTags DESC
+LIMIT 5;
+```
+\
+**План запроса Q1**\
+**Оценка планировщика:**/
+/
+```
+ Limit  (cost=529.15..529.16 rows=1 width=59)
+   ->  Sort  (cost=529.15..529.16 rows=1 width=59)
+         Sort Key: (count(p.tags)) DESC
+         ->  GroupAggregate  (cost=529.11..529.14 rows=1 width=59)
+               Group Key: p.tags
+               ->  Sort  (cost=529.11..529.11 rows=1 width=51)
+                     Sort Key: p.tags
+                     ->  Merge Join  (cost=49.50..529.10 rows=1 width=51)
+                           Merge Cond: (p.id = c.postid)
+                           ->  Index Scan using posts_pkey on posts p  (cost=0.42..40061.96 rows=84 width=47)
+                                 Filter: ((tags ~~ '%|postgresql|%'::text) AND ((length(tags) - length(replace(tags, '|'::text, ''::text))) = 3))
+                           ->  Sort  (cost=49.03..50.39 rows=542 width=12)
+                                 Sort Key: c.postid
+                                 ->  Seq Scan on comments c  (cost=0.00..24.42 rows=542 width=12)
+```
+/
+**Фактическое время**/
+/
+```
+ Limit  (cost=529.15..529.16 rows=1 width=59) (actual time=5.425..5.447 rows=1.00 loops=1)
+   Buffers: shared hit=164
+   ->  Sort  (cost=529.15..529.16 rows=1 width=59) (actual time=5.420..5.437 rows=1.00 loops=1)
+         Sort Key: (count(p.tags)) DESC
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=164
+         ->  GroupAggregate  (cost=529.11..529.14 rows=1 width=59) (actual time=5.347..5.362 rows=1.00 loops=1)
+               Group Key: p.tags
+               Buffers: shared hit=161
+               ->  Sort  (cost=529.11..529.11 rows=1 width=51) (actual time=5.318..5.331 rows=1.00 loops=1)
+                     Sort Key: p.tags
+                     Sort Method: quicksort  Memory: 25kB
+                     Buffers: shared hit=161
+                     ->  Merge Join  (cost=49.50..529.10 rows=1 width=51) (actual time=3.024..5.214 rows=1.00 loops=1)
+                           Merge Cond: (p.id = c.postid)
+                           Buffers: shared hit=158
+                           ->  Index Scan using posts_pkey on posts p  (cost=0.42..40061.96 rows=84 width=47) (actual time=0.096..0.884 rows=3.00 loops=1)
+                                 Filter: ((tags ~~ '%|postgresql|%'::text) AND ((length(tags) - length(replace(tags, '|'::text, ''::text))) = 3))
+                                 Rows Removed by Filter: 564
+                                 Buffers: shared hit=139
+                           ->  Sort  (cost=49.03..50.39 rows=542 width=12) (actual time=2.888..3.564 rows=542.00 loops=1)
+                                 Sort Key: c.postid
+                                 Sort Method: quicksort  Memory: 41kB
+                                 Buffers: shared hit=19
+                                 ->  Seq Scan on comments c  (cost=0.00..24.42 rows=542 width=12) (actual time=0.036..1.474 rows=542.00 loops=1)
+                                       Buffers: shared hit=19
+ Planning:
+   Buffers: shared hit=8
+ Planning Time: 0.793 ms
+ Execution Time: 5.581 ms
+```
+/
+**Оптимизация запроса Q1**/
+Добавление индекса на поле tags:/
+```sql
+CREATE INDEX index_tags ON posts.posts(tags);
+```
+/
+не меняет оценочной стоимости и плана выполнения запроса. Но время фактического выполнения уменьшается
+(при данном запуске, например, уменьшилось на 1.4 мс):
+```
+ Limit  (cost=529.15..529.16 rows=1 width=59) (actual time=4.060..4.083 rows=1.00 loops=1)
+   Buffers: shared hit=158
+   ->  Sort  (cost=529.15..529.16 rows=1 width=59) (actual time=4.056..4.075 rows=1.00 loops=1)
+         Sort Key: (count(p.tags)) DESC
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=158
+         ->  GroupAggregate  (cost=529.11..529.14 rows=1 width=59) (actual time=4.046..4.062 rows=1.00 loops=1)
+               Group Key: p.tags
+               Buffers: shared hit=158
+               ->  Sort  (cost=529.11..529.11 rows=1 width=51) (actual time=4.024..4.037 rows=1.00 loops=1)
+                     Sort Key: p.tags
+                     Sort Method: quicksort  Memory: 25kB
+                     Buffers: shared hit=158
+                     ->  Merge Join  (cost=49.50..529.10 rows=1 width=51) (actual time=1.860..4.024 rows=1.00 loops=1)
+                           Merge Cond: (p.id = c.postid)
+                           Buffers: shared hit=158
+                           ->  Index Scan using posts_pkey on posts p  (cost=0.42..40061.96 rows=84 width=47) (actual time=0.037..0.738 rows=3.00 loops=1)
+                                 Filter: ((tags ~~ '%|postgresql|%'::text) AND ((length(tags) - length(replace(tags, '|'::text, ''::text))) = 3))
+                                 Rows Removed by Filter: 564
+                                 Buffers: shared hit=139
+                           ->  Sort  (cost=49.03..50.39 rows=542 width=12) (actual time=1.797..2.499 rows=542.00 loops=1)
+                                 Sort Key: c.postid
+                                 Sort Method: quicksort  Memory: 41kB
+                                 Buffers: shared hit=19
+                                 ->  Seq Scan on comments c  (cost=0.00..24.42 rows=542 width=12) (actual time=0.010..0.945 rows=542.00 loops=1)
+                                       Buffers: shared hit=19
+ Planning:
+   Buffers: shared hit=8
+ Planning Time: 0.364 ms
+ Execution Time: 4.158 ms
+```
+/
+**Q2**/
+/
+```sql
+EXPLAIN --аналогично для плана
+    ANALYZE
+SELECT 
+    DisplayName AS dname, 
+    Score 
+FROM Users.Users U JOIN Posts.Posts P
+    ON U.id = P.OwnerUserId
+WHERE 
+    AcceptedAnswerId IS NOT NULL 
+    AND 
+    Score IN (
+            SELECT Score 
+            FROM posts.posts
+            WHERE AcceptedAnswerId IS NOT NULL 
+            GROUP BY Score
+            HAVING Score < 0
+            ) 
+    AND 
+    Tags LIKE '%|postgresql|%'
+ORDER BY Score
+LIMIT 5;
+```
+/
+**План запроса Q2**/
+**Оценка планировщика**/
+/
+```
+ Limit  (cost=33351.80..33415.49 rows=5 width=14)
+   ->  Nested Loop  (cost=33351.80..77324.91 rows=3452 width=14)
+         Join Filter: (p.score = posts.score)
+         ->  Group  (cost=32351.38..32387.91 rows=118 width=4)
+               Group Key: posts.score
+               ->  Gather Merge  (cost=32351.38..32387.20 rows=283 width=4)
+                     Workers Planned: 2
+                     ->  Group  (cost=31351.35..31354.51 rows=118 width=4)
+                           Group Key: posts.score
+                           ->  Sort  (cost=31351.35..31352.93 rows=632 width=4)
+                                 Sort Key: posts.score
+                                 ->  Parallel Seq Scan on posts  (cost=0.00..31321.95 rows=632 width=4)
+                                       Filter: ((acceptedanswerid IS NOT NULL) AND (score < 0))
+         ->  Materialize  (cost=1000.42..38835.59 rows=3452 width=14)
+               ->  Gather  (cost=1000.42..38818.33 rows=3452 width=14)
+                     Workers Planned: 2
+                     ->  Nested Loop  (cost=0.42..37473.13 rows=1438 width=14)
+                           ->  Parallel Seq Scan on posts p  (cost=0.00..31321.95 rows=1438 width=8)
+                                 Filter: ((acceptedanswerid IS NOT NULL) AND (tags ~~ '%|postgresql|%'::text))
+                           ->  Index Scan using users_pkey on users u  (cost=0.42..4.28 rows=1 width=14)
+                                 Index Cond: (id = p.owneruserid)
+```
+/
+**Фактическое время**/
+/
+```
+ Limit  (cost=33351.80..33415.49 rows=5 width=14) (actual time=533.372..561.236 rows=5.00 loops=1)
+   Buffers: shared hit=50268 read=44520
+   ->  Nested Loop  (cost=33351.80..77324.91 rows=3452 width=14) (actual time=533.366..561.211 rows=5.00 loops=1)
+         Join Filter: (p.score = posts.score)
+         Rows Removed by Join Filter: 46610
+         Buffers: shared hit=50268 read=44520
+         ->  Group  (cost=32351.38..32387.91 rows=118 width=4) (actual time=155.827..156.095 rows=6.00 loops=1)
+               Group Key: posts.score
+               Buffers: shared hit=7820 read=22308
+               ->  Gather Merge  (cost=32351.38..32387.20 rows=283 width=4) (actual time=155.822..156.054 rows=11.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=7820 read=22308
+                     ->  Group  (cost=31351.35..31354.51 rows=118 width=4) (actual time=148.566..149.689 rows=6.33 loops=3)
+                           Group Key: posts.score
+                           Buffers: shared hit=7820 read=22308
+                           ->  Sort  (cost=31351.35..31352.93 rows=632 width=4) (actual time=148.557..149.106 rows=337.67 loops=3)
+                                 Sort Key: posts.score
+                                 Sort Method: quicksort  Memory: 25kB
+                                 Buffers: shared hit=7820 read=22308
+                                 Worker 0:  Sort Method: quicksort  Memory: 25kB
+                                 Worker 1:  Sort Method: quicksort  Memory: 25kB
+                                 ->  Parallel Seq Scan on posts  (cost=0.00..31321.95 rows=632 width=4) (actual time=6.912..147.484 rows=493.33 loops=3)
+                                       Filter: ((acceptedanswerid IS NOT NULL) AND (score < 0))
+                                       Rows Removed by Filter: 80656
+                                       Buffers: shared hit=7746 read=22308
+         ->  Materialize  (cost=1000.42..38835.59 rows=3452 width=14) (actual time=0.099..54.204 rows=7769.17 loops=6)
+               Storage: Memory  Maximum Storage: 579kB
+               Buffers: shared hit=42448 read=22212
+               ->  Gather  (cost=1000.42..38818.33 rows=3452 width=14) (actual time=0.562..238.966 rows=8651.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=42448 read=22212
+                     ->  Nested Loop  (cost=0.42..37473.13 rows=1438 width=14) (actual time=0.158..250.596 rows=2883.67 loops=3)
+                           Buffers: shared hit=42448 read=22212
+                           ->  Parallel Seq Scan on posts p  (cost=0.00..31321.95 rows=1438 width=8) (actual time=0.104..190.226 rows=2918.00 loops=3)
+                                 Filter: ((acceptedanswerid IS NOT NULL) AND (tags ~~ '%|postgresql|%'::text))
+                                 Rows Removed by Filter: 78231
+                                 Buffers: shared hit=7842 read=22212
+                           ->  Index Scan using users_pkey on users u  (cost=0.42..4.28 rows=1 width=14) (actual time=0.015..0.015 rows=0.99 loops=8754)
+                                 Index Cond: (id = p.owneruserid)
+                                 Buffers: shared hit=34606
+ Planning:
+   Buffers: shared hit=9
+ Planning Time: 1.467 ms
+ Execution Time: 561.759 ms
+```
+/
+**Оптимизация запроса Q2:**
+Условие WHERE на поле Score включает подзапрос, поэтому было решено создать индекс:/ 
+```sql
+CREATE INDEX index_tags ON posts.posts(tags);
+```
+/
+в результате чего цена оценочного плана уменьшилась практически в 2 раза:\
+```
+ Limit  (cost=17344.37..17536.97 rows=5 width=14)
+   ->  Nested Loop  (cost=17344.37..150311.63 rows=3452 width=14)
+         ->  Nested Loop  (cost=17343.95..135545.38 rows=3452 width=8)
+               ->  Group  (cost=17322.90..17330.49 rows=118 width=4)
+                     Group Key: posts.score
+                     ->  Sort  (cost=17322.90..17326.69 rows=1517 width=4)
+                           Sort Key: posts.score
+                           ->  Bitmap Heap Scan on posts  (cost=84.13..17242.75 rows=1517 width=4)
+                                 Recheck Cond: (score < 0)
+                                 Filter: (acceptedanswerid IS NOT NULL)
+                                 ->  Bitmap Index Scan on index_score  (cost=0.00..83.75 rows=7377 width=0)
+                                       Index Cond: (score < 0)
+               ->  Bitmap Heap Scan on posts p  (cost=21.05..1001.53 rows=29 width=8)
+                     Recheck Cond: (score = posts.score)
+                     Filter: ((acceptedanswerid IS NOT NULL) AND (tags ~~ '%|postgresql|%'::text))
+                     ->  Bitmap Index Scan on index_score  (cost=0.00..21.05 rows=2063 width=0)
+                           Index Cond: (score = posts.score)
+         ->  Index Scan using users_pkey on users u  (cost=0.42..4.28 rows=1 width=14)
+               Index Cond: (id = p.owneruserid)
+```
+\
+а время выполнения более чем в 10 раз:/
+```
+ Limit  (cost=17344.37..17536.97 rows=5 width=14) (actual time=28.212..29.034 rows=5.00 loops=1)
+   Buffers: shared hit=7059 read=9
+   ->  Nested Loop  (cost=17344.37..150311.63 rows=3452 width=14) (actual time=28.208..29.013 rows=5.00 loops=1)
+         Buffers: shared hit=7059 read=9
+         ->  Nested Loop  (cost=17343.95..135545.38 rows=3452 width=8) (actual time=28.180..28.903 rows=5.00 loops=1)
+               Buffers: shared hit=7039 read=9
+               ->  Group  (cost=17322.90..17330.49 rows=118 width=4) (actual time=27.588..27.709 rows=6.00 loops=1)
+                     Group Key: posts.score
+                     Buffers: shared hit=6760 read=9
+                     ->  Sort  (cost=17322.90..17326.69 rows=1517 width=4) (actual time=27.580..27.641 rows=31.00 loops=1)
+                           Sort Key: posts.score
+                           Sort Method: quicksort  Memory: 49kB
+                           Buffers: shared hit=6760 read=9
+                           ->  Bitmap Heap Scan on posts  (cost=84.13..17242.75 rows=1517 width=4) (actual time=5.107..25.101 rows=1480.00 loops=1)
+                                 Recheck Cond: (score < 0)
+                                 Filter: (acceptedanswerid IS NOT NULL)
+                                 Rows Removed by Filter: 6382
+                                 Heap Blocks: exact=6760
+                                 Buffers: shared hit=6760 read=9
+                                 ->  Bitmap Index Scan on index_score  (cost=0.00..83.75 rows=7377 width=0) (actual time=2.546..2.548 rows=7862.00 loops=1)
+                                       Index Cond: (score < 0)
+                                       Buffers: shared read=9
+               ->  Bitmap Heap Scan on posts p  (cost=21.05..1001.53 rows=29 width=8) (actual time=0.166..0.191 rows=0.83 loops=6)
+                     Recheck Cond: (score = posts.score)
+                     Filter: ((acceptedanswerid IS NOT NULL) AND (tags ~~ '%|postgresql|%'::text))
+                     Rows Removed by Filter: 43
+                     Heap Blocks: exact=261
+                     Buffers: shared hit=279
+                     ->  Bitmap Index Scan on index_score  (cost=0.00..21.05 rows=2063 width=0) (actual time=0.029..0.029 rows=71.83 loops=6)
+                           Index Cond: (score = posts.score)
+                           Buffers: shared hit=18
+         ->  Index Scan using users_pkey on users u  (cost=0.42..4.28 rows=1 width=14) (actual time=0.015..0.015 rows=1.00 loops=5)
+               Index Cond: (id = p.owneruserid)
+               Buffers: shared hit=20
+ Planning:
+   Buffers: shared hit=9
+ Planning Time: 0.884 ms
+ Execution Time: 29.157 ms
+```\
+### **Инструкция по запуску**
+
+**1.** Подключиться к СУБД PostgreSQL\
+\
+**2.** Выполнить запросы можно запустив SQL-скрипт queries.sql:
+```psql
+\i /path/to/postgres_task/sql/queries.sql
+```
+**Заменить /path/to на фактический путь к каталогу postgres_task/sql/create_db.sql** на Вашем локальном устройстве \
+\
+**4.** Посмотреть планы запросов можно с помощью execution_plan.sql:
+```psql
+\i /path/to/postgres_task/sql/execution_plan.sql
+```
+**Заменить /path/to на фактический путь к каталогу postgres_task/python/read_xml.py** на Вашем локальном устройстве
