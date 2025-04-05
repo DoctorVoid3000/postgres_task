@@ -816,7 +816,7 @@ CREATE INDEX index_tags ON posts.posts(tags);
  Execution Time: 4.158 ms
 ```
 \
-**Q2**\
+**Q2**
 
 ```sql
 EXPLAIN --аналогично для плана
@@ -843,7 +843,7 @@ LIMIT 5;
 ```
 \
 **План запроса Q2**\
-**Оценка планировщика**\
+**Оценка планировщика**
 ```
  Limit  (cost=33351.80..33415.49 rows=5 width=14)
    ->  Nested Loop  (cost=33351.80..77324.91 rows=3452 width=14)
@@ -868,7 +868,7 @@ LIMIT 5;
                                  Index Cond: (id = p.owneruserid)
 ```
 \
-**Фактическое время**\
+**Фактическое время**
 \
 ```
  Limit  (cost=33351.80..33415.49 rows=5 width=14) (actual time=533.372..561.236 rows=5.00 loops=1)
