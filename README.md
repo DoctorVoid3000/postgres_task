@@ -310,16 +310,16 @@ if __name__ == '__main__':
     )
 
     if conn is not None:
-        ###ВНИМАНИЕ! Пути к xml-файлам необходимо поменять на path/to/postgres_task/python/read_xml.py!###
-        ##где path/to/ - фактический путь к каталогу postgres_task на Вашем локальном устройстве
-        users_path = '/home/mephist/postgresql/scripts/xml/dba.stackexchange.com/Users.xml'
-        posts_path = '/home/mephist/postgresql/scripts/xml/dba.stackexchange.com/Posts.xml'
-        badges_path = '/home/mephist/postgresql/scripts/xml/Badges.xml'
-        comments_path = '/home/mephist/postgresql/scripts/xml/Comments.xml'
-        post_history_path = '/home/mephist/postgresql/scripts/xml/PostHistory.xml'
-        post_links_path = '/home/mephist/postgresql/scripts/xml/PostLinks.xml'
-        tags_path = '/home/mephist/postgresql/scripts/xml/Tags.xml'
-        votes_path = '/home/mephist/postgresql/scripts/xml/Votes.xml'
+        ###ВНИМАНИЕ! Пути к xml-файлам необходимо поменять на path\to\postgres_task\python\read_xml.py!###
+        ##где path\to\ - фактический путь к каталогу postgres_task на Вашем локальном устройстве
+        users_path = '\home\mephist\postgresql\scripts\xml\dba.stackexchange.com\Users.xml'
+        posts_path = '\home\mephist\postgresql\scripts\xml\dba.stackexchange.com\Posts.xml'
+        badges_path = '\home\mephist\postgresql\scripts\xml\Badges.xml'
+        comments_path = '\home\mephist\postgresql\scripts\xml\Comments.xml'
+        post_history_path = '\home\mephist\postgresql\scripts\xml\PostHistory.xml'
+        post_links_path = '\home\mephist\postgresql\scripts\xml\PostLinks.xml'
+        tags_path = '\home\mephist\postgresql\scripts\xml\Tags.xml'
+        votes_path = '\home\mephist\postgresql\scripts\xml\Votes.xml'
         
         try: # Всю работу с таблицами помещаем блок в try...except на случай, если
              # пользователь забудет поменять пути к xml-файлам
@@ -688,20 +688,20 @@ pip install psycopg2
 \
 **3.** Запустить SQL-скрипт, создать базу данных, схемы и таблицы:
 ```psql
-\i /path/to/postgres_task/sql/create_db.sql
+\i \path\to\postgres_task\sql\create_db.sql
 ```
-**Заменить /path/to на фактический путь к каталогу postgres_task/sql/create_db.sql** на Вашем локальном устройстве \
+**Заменить \path\to на фактический путь к каталогу postgres_task\sql\create_db.sql** на Вашем локальном устройстве \
 \
 **4.** запустить python-скрипт read_xml.py, заполнить таблицы данными. **НЕ ЗАБУДЬТЕ ПОМЕНЯТЬ ПУТИ В СКРИПТЕ К XML-ФАЙЛАМ НА ФАКТИЧЕСКИЕ НА ВАШЕМ ЛОКАЛЬНОМ УСТРОЙСТВЕ!!!**
 ```psql
-\i /path/to/postgres_task/python/read_xml.py
+\i \path\to\postgres_task\python\read_xml.py
 ```
-**Заменить /path/to на фактический путь к каталогу postgres_task/python/read_xml.py** на Вашем локальном устройстве
+**Заменить \path\to на фактический путь к каталогу postgres_task\python\read_xml.py** на Вашем локальном устройстве
 
 ## **Часть вторая. SQL-запросы**
 
 **Q1** 
-\
+
 ```sql
 EXPLAIN --оценка планировщика
     ANALYZE --фактическое время выполнения
@@ -722,8 +722,8 @@ LIMIT 5;
 ```
 \
 **План запроса Q1**\
-**Оценка планировщика:**/
-/
+**Оценка планировщика:**\
+
 ```
  Limit  (cost=529.15..529.16 rows=1 width=59)
    ->  Sort  (cost=529.15..529.16 rows=1 width=59)
@@ -740,9 +740,9 @@ LIMIT 5;
                                  Sort Key: c.postid
                                  ->  Seq Scan on comments c  (cost=0.00..24.42 rows=542 width=12)
 ```
-/
-**Фактическое время**/
-/
+
+**Фактическое время**\
+
 ```
  Limit  (cost=529.15..529.16 rows=1 width=59) (actual time=5.425..5.447 rows=1.00 loops=1)
    Buffers: shared hit=164
@@ -775,13 +775,13 @@ LIMIT 5;
  Planning Time: 0.793 ms
  Execution Time: 5.581 ms
 ```
-/
-**Оптимизация запроса Q1**/
-Добавление индекса на поле tags:/
+
+**Оптимизация запроса Q1**
+Добавление индекса на поле tags:\
 ```sql
 CREATE INDEX index_tags ON posts.posts(tags);
 ```
-/
+\
 не меняет оценочной стоимости и плана выполнения запроса. Но время фактического выполнения уменьшается
 (при данном запуске, например, уменьшилось на 1.4 мс):
 ```
@@ -816,9 +816,9 @@ CREATE INDEX index_tags ON posts.posts(tags);
  Planning Time: 0.364 ms
  Execution Time: 4.158 ms
 ```
-/
-**Q2**/
-/
+\
+**Q2**\
+\
 ```sql
 EXPLAIN --аналогично для плана
     ANALYZE
@@ -842,10 +842,10 @@ WHERE
 ORDER BY Score
 LIMIT 5;
 ```
-/
-**План запроса Q2**/
-**Оценка планировщика**/
-/
+\
+**План запроса Q2**\
+**Оценка планировщика**\
+\
 ```
  Limit  (cost=33351.80..33415.49 rows=5 width=14)
    ->  Nested Loop  (cost=33351.80..77324.91 rows=3452 width=14)
@@ -869,9 +869,9 @@ LIMIT 5;
                            ->  Index Scan using users_pkey on users u  (cost=0.42..4.28 rows=1 width=14)
                                  Index Cond: (id = p.owneruserid)
 ```
-/
-**Фактическое время**/
-/
+\
+**Фактическое время**\
+\
 ```
  Limit  (cost=33351.80..33415.49 rows=5 width=14) (actual time=533.372..561.236 rows=5.00 loops=1)
    Buffers: shared hit=50268 read=44520
@@ -920,13 +920,13 @@ LIMIT 5;
  Planning Time: 1.467 ms
  Execution Time: 561.759 ms
 ```
-/
+\
 **Оптимизация запроса Q2:**
-Условие WHERE на поле Score включает подзапрос, поэтому было решено создать индекс:/ 
+Условие WHERE на поле Score включает подзапрос, поэтому было решено создать индекс:\ 
 ```sql
 CREATE INDEX index_tags ON posts.posts(tags);
 ```
-/
+\
 в результате чего цена оценочного плана уменьшилась практически в 2 раза:\
 ```
  Limit  (cost=17344.37..17536.97 rows=5 width=14)
@@ -950,7 +950,7 @@ CREATE INDEX index_tags ON posts.posts(tags);
                Index Cond: (id = p.owneruserid)
 ```
 \
-а время выполнения более чем в 10 раз:/
+а время выполнения более чем в 10 раз:\
 ```
  Limit  (cost=17344.37..17536.97 rows=5 width=14) (actual time=28.212..29.034 rows=5.00 loops=1)
    Buffers: shared hit=7059 read=9
@@ -997,12 +997,12 @@ CREATE INDEX index_tags ON posts.posts(tags);
 \
 **2.** Выполнить запросы можно запустив SQL-скрипт queries.sql:
 ```psql
-\i /path/to/postgres_task/sql/queries.sql
+\i \path\to\postgres_task\sql\queries.sql
 ```
-**Заменить /path/to на фактический путь к каталогу postgres_task/sql/create_db.sql** на Вашем локальном устройстве \
+**Заменить \path\to на фактический путь к каталогу postgres_task\sql\create_db.sql** на Вашем локальном устройстве \
 \
 **4.** Посмотреть планы запросов можно с помощью execution_plan.sql:
 ```psql
-\i /path/to/postgres_task/sql/execution_plan.sql
+\i \path\to\postgres_task\sql\execution_plan.sql
 ```
-**Заменить /path/to на фактический путь к каталогу postgres_task/python/read_xml.py** на Вашем локальном устройстве
+**Заменить \path\to на фактический путь к каталогу postgres_task\python\read_xml.py** на Вашем локальном устройстве
