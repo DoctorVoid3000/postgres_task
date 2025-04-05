@@ -697,10 +697,10 @@ pip install psycopg2
 \i /path/to/postgres_task/python/read_xml.py
 ```
 **Заменить /path/to на фактический путь к каталогу postgres_task/python/read_xml.py** на Вашем локальном устройстве
-\
+
 ## **Часть вторая. SQL-запросы**
 
-**#Q1** \
+**#Q1** 
 \
 ```sql
 EXPLAIN --оценка планировщика
